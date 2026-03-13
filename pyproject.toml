@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta" 
+
+[project]
+name = "backtest-grid-scale"
+version = "0.1.0"
+description = "Backtesting parameter grid search built to run at scale"
+requires-python = ">=3.11"
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "numba",
+    "psutil",
+    "TA-Lib",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["benchmarks"]
+
+[tool.pytest.ini_options]
+testpaths = ["benchmarks"]
