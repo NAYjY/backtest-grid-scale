@@ -1,0 +1,33 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install TA-Lib C library
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y gcc wget
+          wget -q http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+          tar -xzf ta-lib-0.4.0-src.tar.gz
+          cd ta-lib
+          ./configure --prefix=/usr
+          make
+          sudo make install
+
+      - name: Install Python dependencies
+        run: |
+          pip install numpy pandas numba psutil pytest TA-Lib
+
+      - name: Run tests
+        run: |
+          pytest benchmarks/test_correctness.py -v
