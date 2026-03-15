@@ -1,6 +1,15 @@
-def calculate_indicators(df,ATR_LEN_L,ATR_LEN_S,ATR_MULT_L,ATR_MULT_S,ROC_LEN_L,ROC_LEN_S,ROC_THRESH_L,ROC_THRESH_S):       
-    df['atr_l'] = ATR_MULT_L * abstract.ATR(df['high'], df['low'], df['close'], timeperiod=ATR_LEN_L)
-    df['atr_s'] = ATR_MULT_S * abstract.ATR(df['high'], df['low'], df['close'], timeperiod=ATR_LEN_S)
+import numpy as np
+import pandas as pd
+from talib import abstract
+from data import StrategyParams
+
+def calculate_indicators(df: pd.DataFrame, 
+                         params: StrategyParams) -> pd.DataFrame:
+    
+    df['atr_l'] = params.atr_mult_l * abstract.ATR(
+        df['high'], df['low'], df['close'], timeperiod=params.atr_len_l)
+    df['atr_s'] = params.atr_mult_s * abstract.ATR(
+        df['high'], df['low'], df['close'], timeperiod=params.atr_len_s)
     df.dropna(subset=['atr_l', 'atr_s'], inplace=True)
 
     midpoint = (df['high'] + df['low']) / 2
@@ -9,10 +18,10 @@ def calculate_indicators(df,ATR_LEN_L,ATR_LEN_S,ATR_MULT_L,ATR_MULT_S,ROC_LEN_L,
     df['long_stop_s']  = midpoint - df['atr_s']
     df['short_stop_s'] = midpoint + df['atr_s']
 
-    roc_l = 100 * (df['close'] - df['close'].shift(ROC_LEN_L)) / df['close'].shift(ROC_LEN_L)
-    roc_s = 100 * (df['close'] - df['close'].shift(ROC_LEN_S)) / df['close'].shift(ROC_LEN_S)
-    df['ema_roc_l'] = abstract.EMA(np.array(roc_l), timeperiod=ROC_LEN_L // 2)
-    df['ema_roc_s'] = abstract.EMA(np.array(roc_s), timeperiod=ROC_LEN_S // 2)
+    roc_l = 100 * (df['close'] - df['close'].shift(params.roc_len_l)) / df['close'].shift(params.roc_len_l)
+    roc_s = 100 * (df['close'] - df['close'].shift(params.roc_len_s)) / df['close'].shift(params.roc_len_s)
+    df['ema_roc_l'] = abstract.EMA(np.array(roc_l), timeperiod=params.roc_len_l // 2)
+    df['ema_roc_s'] = abstract.EMA(np.array(roc_s), timeperiod=params.roc_len_s // 2)
 
     df['long_stop_prev_l']  = _rolling_max_stop(df['close'].values, df['long_stop_l'].values)
     df['short_stop_prev_l'] = _rolling_min_stop(df['close'].values, df['short_stop_l'].values)
@@ -20,14 +29,12 @@ def calculate_indicators(df,ATR_LEN_L,ATR_LEN_S,ATR_MULT_L,ATR_MULT_S,ROC_LEN_L,
     df['short_stop_prev_s'] = _rolling_min_stop(df['close'].values, df['short_stop_s'].values)
 
     df['dir_l'] = _calculate_direction(
-        df['close'].values, df['short_stop_prev_l'], df['long_stop_prev_l']
-    )
+        df['close'].values, df['short_stop_prev_l'], df['long_stop_prev_l'])
     df['dir_s'] = _calculate_direction(
-        df['close'].values, df['short_stop_prev_s'], df['long_stop_prev_s']
-    )
+        df['close'].values, df['short_stop_prev_s'], df['long_stop_prev_s'])
 
-    roc_strong_l = (df['ema_roc_l'] > ROC_THRESH_L / 2) | (df['ema_roc_l'] < -(ROC_THRESH_L / 2))
-    roc_strong_s = (df['ema_roc_s'] > ROC_THRESH_S / 2) | (df['ema_roc_s'] < -(ROC_THRESH_S / 2))
+    roc_strong_l = (df['ema_roc_l'] > params.roc_thresh_l / 2) | (df['ema_roc_l'] < -(params.roc_thresh_l / 2))
+    roc_strong_s = (df['ema_roc_s'] > params.roc_thresh_s / 2) | (df['ema_roc_s'] < -(params.roc_thresh_s / 2))
 
     df['long_signal']  = (df['dir_l'] == 1)  & (df['dir_l'].shift(1) == -1) & roc_strong_l
     df['short_signal'] = (df['dir_s'] == -1) & (df['dir_s'].shift(1) == 1)  & roc_strong_s
@@ -37,7 +44,6 @@ def calculate_indicators(df,ATR_LEN_L,ATR_LEN_S,ATR_MULT_L,ATR_MULT_S,ROC_LEN_L,
     df['position'] = np.where(df['short_signal'], -1, df['position'])
 
     return df
-
 # ─── Stops ────────────────────────────────────────────────────────────────────
 def _rolling_max_stop(close, stop):
     n = len(close)
