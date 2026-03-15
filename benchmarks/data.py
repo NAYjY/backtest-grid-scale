@@ -1,3 +1,5 @@
+import pandas as pd
+
 from dataclasses import dataclass
 
 @dataclass
@@ -14,6 +16,7 @@ class StrategyParams:
     sl_pct_s:    float
     
 def load_ohlcv(symbol, interval):
+    DATA_DIR     = '/home/nayjy/Workplace/onRunMA/new_src'
     path = f'{DATA_DIR}/{symbol[1]}_{symbol[0]}_{interval}.csv'
     df = pd.read_csv(path, index_col='time')
     df.index = pd.to_datetime(df.index)
