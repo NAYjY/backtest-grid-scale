@@ -1,3 +1,9 @@
+import os
+import time
+import csv
+import psutil
+import numpy as np
+import pandas as pd 
 
 
 # ─── Performance Monitor ──────────────────────────────────────────────────────
@@ -33,3 +39,49 @@ class PerformanceMonitor:
             f"Process CPU: {process_cpu:.1f}% | "
             f"System CPU: {system_cpu:.1f}% | "
             f"{elapsed:.1f}s")
+
+
+if __name__ == "__main__":
+    SYMBOL       = ['S501!', 'TFEX', 1]
+    interval     = '1h'
+    DATA_DIR     = '/home/nayjy/Workplace/onRunMA/new_src'
+    scr_path     = '/home/nayjy/Workplace/onRunMA/new_src'
+    path = '/home/nayjy/Workplace/compare_claen/'
+    filename = f'SuperDaily_{SYMBOL[0]}_{interval}.csv'
+
+
+
+    from data import load_ohlcv
+    df = load_ohlcv(SYMBOL, interval)
+
+    from config import get_sample_grid
+    from pandas_version import run_pandas_version
+    from njit_version import run_njit_version
+    from data import StrategyParams
+    from indicators import calculate_indicators
+    print('Start')
+    len_grid, grid = get_sample_grid()
+    print('Get grind')
+    monitor = PerformanceMonitor()
+    monitor.record("Start Pandas")
+    for params in grid:
+        df = calculate_indicators(df, params)
+        run_pandas_version(
+        df=df,
+        params=params,
+        output_path=path,
+        filename=filename
+        )
+    monitor.record("End Pandas")
+        
+    # RUN NJIT VERSION
+    monitor.record("Start Numba")
+    for params in grid:        
+        df = calculate_indicators(df, params)
+        run_njit_version(
+        df=df,
+        params=params,
+        output_path=path,
+        filename=filename
+        )
+    monitor.record("End Numba")
