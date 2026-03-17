@@ -1,9 +1,9 @@
-<<<<<<< HEAD
 import numpy as np
 import pandas as pd
 import os
 from data import StrategyParams
 from dataclasses import asdict
+from config import load_config
 
 def run_pandas_version(
     df: pd.DataFrame,
@@ -26,48 +26,14 @@ def run_pandas_version(
 
 def generate_performance_report(df_Y: pd.DataFrame,
                                 params: StrategyParams)-> pd.DataFrame:
-=======
-import os
-import numpy as np
-import pandas as pd
-import csv
-import time
-import psutil
-
-def run_pandas_version():
-    calculate_indicators = __import__('benchmarks.indicators').calculate_indicators
-    simulate_trades = __import__('benchmarks.pandas_version').simulate_trades
-    add_trade_stats = __import__('benchmarks.pandas_version').add_trade_stats
-    generate_performance_report = __import__('benchmarks.pandas_version').generate_performance_report
-    from benchmarks.config import (
-        SYMBOL, INTERVAL, DATA_DIR,
-        ATR_LEN_L_MAX, ATR_MULT_L_MAX, ATR_LEN_S_MAX, ATR_MULT_S_MAX,
-        ROC_LEN_L_MAX, ROC_THRESH_L_MAX, ROC_LEN_S_MAX, ROC_THRESH_S_MAX,
-        SL_PCT_L_MAX, SL_PCT_S_MAX,
-        ATR_LEN_L_MIN, ATR_MULT_L_MIN, ATR_LEN_S_MIN, ATR_MULT_S_MIN,
-        ROC_LEN_L_MIN, ROC_THRESH_L_MIN, ROC_LEN_S_MIN, ROC_THRESH_S_MIN,
-        SL_PCT_L_MIN, SL_PCT_S_MIN
-    )
-
-
-def generate_performance_report(df_Y, symbol, interval, ATR_L, ATR_S, ATR_M_L, ATR_M_S, ROC_L, ROC_S, ROC_T_L, ROC_T_S, SL_L, SL_S):
->>>>>>> main
-    # DEFINE RANGES FOR 2022-2026
-    months = pd.date_range(start='2022-01-01', end='2026-12-01', freq='MS')
-    quarters = pd.date_range(start='2022-01-01', end='2026-12-01', freq='QS')
-    years = pd.date_range(start='2022-01-01', end='2027-01-01', freq='YS')
-
-<<<<<<< HEAD
+    cfg = load_config()
+    months   = pd.date_range(start=cfg['backtest_start'], 
+                          end=cfg['backtest_end'], freq='MS')
+    quarters = pd.date_range(start=cfg['backtest_start'], 
+                            end=cfg['backtest_end'], freq='QS')
+    years    = pd.date_range(start=cfg['backtest_start'], 
+                            end=cfg['backtest_end'], freq='YS')
     data = asdict(params)
-=======
-    data = {
-        'symbol': symbol[0],
-        'Interval': interval,
-        'ATR_L': ATR_L, 'ATR_S': ATR_S, 'ATR_M_L': ATR_M_L, 'ATR_M_S': ATR_M_S,
-        'ROC_L': ROC_L, 'ROC_S': ROC_S, 'ROC_T_L': ROC_T_L, 'ROC_T_S': ROC_T_S,
-        'SL_L': SL_L, 'SL_S': SL_S
-    }
->>>>>>> main
 
     # QUARTERLY SLICING
     for i in range(len(quarters)-1):
@@ -91,26 +57,12 @@ def generate_performance_report(df_Y, symbol, interval, ATR_L, ATR_S, ATR_M_L, A
 
 
     # TOTALS
-    total_range = df_Y.loc['2022-01-01':'2026-12-31']
+    total_range = df_Y.loc[cfg['backtest_start']:cfg['backtest_end']]
     data['Total'] = total_range.pnl.sum()
     data['Total_DD'] = total_range.DrawDown.min()
 
     new_df = pd.DataFrame(data, index=[0])
 
-    '''
-    fix this to univarsal not just 202X
-
-    check all start and stop into valable not hard number
-    '''
-    # SEASONAL AGGREGATION (2022-2026)
-    for q in ['Q1', 'Q2', 'Q3', 'Q4']:
-        q_cols = [col for col in new_df.columns if col.endswith(q) and col.startswith('202')]
-        new_df[q] = new_df[q_cols].sum(axis=1)
-
-<<<<<<< HEAD
-=======
-    new_df['eTsdr'] = new_df.Total / abs(new_df.Total_SDR) if data['Total_SDR'] != 0 else 0
->>>>>>> main
     return new_df
 
 # ─── Trade Simulation ─────────────────────────────────────────────────────────
@@ -210,8 +162,4 @@ def add_trade_stats(result):
     result['yearly_pnl_cumsum'] = result.groupby(YEAR)['pnl'].cumsum()
     result['position_label'] = result['position'].map({1: 'L', -1: 'S', 0: 'X'})
     
-<<<<<<< HEAD
     return result
-=======
-    return result
->>>>>>> main

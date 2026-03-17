@@ -29,9 +29,9 @@ def calculate_indicators(df: pd.DataFrame,
     df['short_stop_prev_s'] = _rolling_min_stop(df['close'].values, df['short_stop_s'].values)
 
     df['dir_l'] = _calculate_direction(
-        df['close'].values, df['short_stop_prev_l'], df['long_stop_prev_l'])
+        df['close'].values, df['short_stop_prev_l'].values, df['long_stop_prev_l'].values)
     df['dir_s'] = _calculate_direction(
-        df['close'].values, df['short_stop_prev_s'], df['long_stop_prev_s'])
+        df['close'].values, df['short_stop_prev_s'].values, df['long_stop_prev_s'].values)
 
     roc_strong_l = (df['ema_roc_l'] > params.roc_thresh_l / 2) | (df['ema_roc_l'] < -(params.roc_thresh_l / 2))
     roc_strong_s = (df['ema_roc_s'] > params.roc_thresh_s / 2) | (df['ema_roc_s'] < -(params.roc_thresh_s / 2))
@@ -46,6 +46,7 @@ def calculate_indicators(df: pd.DataFrame,
     return df
 # ─── Stops ────────────────────────────────────────────────────────────────────
 def _rolling_max_stop(close, stop):
+    stop = stop.copy()
     n = len(close)
     prev = np.zeros(n)
     prev[0] = stop[0]
@@ -56,6 +57,7 @@ def _rolling_max_stop(close, stop):
     return prev
 
 def _rolling_min_stop(close, stop):
+    stop = stop.copy()
     n = len(close)
     prev = np.zeros(n)
     prev[0] = stop[0]
@@ -67,6 +69,9 @@ def _rolling_min_stop(close, stop):
 
 # ─── Direction ────────────────────────────────────────────────────────────────
 def _calculate_direction(close, stop_up, stop_down, initial_dir=1):
+    close = close.copy()
+    stop_up = stop_up.copy()
+    stop_down = stop_down.copy()
     n = len(close)
     out = np.zeros(n)
     direction = initial_dir

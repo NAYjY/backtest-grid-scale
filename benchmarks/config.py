@@ -1,9 +1,23 @@
-<<<<<<< HEAD
 from dataclasses import dataclass, field
 import numpy as np
 import itertools
 from data import StrategyParams
 import random
+import yaml
+from pathlib import Path
+
+def load_config() -> dict:
+    # try local config first, fall back to default
+    root = Path(__file__).parent.parent  # benchmarks/ → root
+    
+    local   = root / "config.local.yaml"
+    default = root / "config.yaml"
+    
+    path = local if local.exists() else default
+    
+    with open(path) as f:
+        return yaml.safe_load(f)
+cfg = load_config()
 
 @dataclass
 class OptimizationSpace:

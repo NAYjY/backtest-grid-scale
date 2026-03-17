@@ -3,9 +3,9 @@ import numpy as np
 import numba as nb
 import pandas as pd
 import csv
-<<<<<<< HEAD
 from data import StrategyParams
 from dataclasses import asdict
+from config import load_config
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -20,58 +20,23 @@ def run_njit_version(
     trades, n_trades = simulate_trades(arr, params.sl_pct_l, params.sl_pct_s)
     results = build_trades_df(trades, n_trades, df.index)
     #
-    VIEW_START   = '2025-01-01'
-    VIEW_END     = '2026-03-01'
-    s = pd.to_datetime(VIEW_START )
-    e = pd.to_datetime(VIEW_END)
-    total_type = 'Y'
-    sumDR_type = 'M'
-    condition = [-2000.0, 0.0, 0.0,1.0,99999.0]
+    cfg = load_config()
+    s = pd.to_datetime(cfg['view_start'])
+    e = pd.to_datetime(cfg['view_end'])
+    total_type = cfg['total_type']
+    condition = cfg['condition']
     #
     run_screening(results[['high','low','open','close','position','pnl']],s,e,total_type,params,condition,output_path,filename)
 
 
     return results
-=======
-import time
-import psutil
-
-
-
-s = pd.to_datetime(VIEW_START )
-e = pd.to_datetime(VIEW_END)
-total_type = 'Y'
-sumDR_type = 'M'
-condition = [0.0, 100000.0, 0.0, 0.0, 0.0, 0.0, 0.0,1.0,99999.0]
-
-
-def run_njit_version():
-    from benchmarks.indicators import calculate_indicators
-    from benchmarks.config import (
-        SYMBOL, INTERVAL, DATA_DIR,
-        ATR_LEN_L_MAX, ATR_MULT_L_MAX, ATR_LEN_S_MAX, ATR_MULT_S_MAX,
-        ROC_LEN_L_MAX, ROC_THRESH_L_MAX, ROC_LEN_S_MAX, ROC_THRESH_S_MAX,
-        SL_PCT_L_MAX, SL_PCT_S_MAX,
-        ATR_LEN_L_MIN, ATR_MULT_L_MIN, ATR_LEN_S_MIN, ATR_MULT_S_MIN,
-        ROC_LEN_L_MIN, ROC_THRESH_L_MIN, ROC_LEN_S_MIN, ROC_THRESH_S_MIN,
-        SL_PCT_L_MIN, SL_PCT_S_MIN
-    )   
-    calculate_indicators = __import__('benchmarks.indicators').calculate_indicators
-    simulate_trades = __import__('benchmarks.njit_version').simulate_trades
-    build_trades_df = __import__('benchmarks.njit_version').build_trades_df
-    run_screening = __import__('benchmarks.njit_version').run_screening
->>>>>>> main
 # ─── Numba: all math ──────────────────────────────────────────────────────────
 
 @nb.njit
 def screen_parameter_set(
     trades:         np.ndarray,
     period_indices: np.ndarray,   # CSV column boundaries — user freq (M/Q/Y)
-<<<<<<< HEAD
     thresholds:     np.ndarray,   # [min_pnl, winR, pf, min_n, max_n]
-=======
-    thresholds:     np.ndarray,   # [min_pnl, max_dd, pct_Y, pct_S, pct_Q, winR, pf, min_n, max_n]
->>>>>>> main
 ) -> tuple:
 
     # ─── Column indices ────────────────────────────────────────────────────────────
@@ -84,12 +49,6 @@ def screen_parameter_set(
     COL_DRAWDOWN  = 6
 
     n = trades.shape[0]
-<<<<<<< HEAD
-=======
-
-    # ── sumDR ─────────────────────────────────────────────────────────────────
-    trades[0, COL_SUMDR] = trades[0, COL_PNL]
->>>>>>> main
     wins         = 0
     gross_profit = 0.0
     gross_loss   = 0.0
@@ -182,19 +141,11 @@ def build_report_row(
     total_pnl_l:   float,
     total_pnl_s:   float,
     total_dd:      float,
-<<<<<<< HEAD
-=======
-    total_mincm:   float,
->>>>>>> main
     win_rate:      float,
     profit_factor: float,
     n_trades:      int,
 ) -> pd.DataFrame:
-<<<<<<< HEAD
     data = asdict(params)
-=======
-    data = params.copy()
->>>>>>> main
     for i, label in enumerate(period_labels):
         data[label]            = period_pnl[i]
         data[label + '_DD']    = period_dd[i]
@@ -241,11 +192,7 @@ def run_screening(
     
 
     # ── Build array ───────────────────────────────────────────────────────────
-<<<<<<< HEAD
     cols = ['high', 'low', 'open', 'close', 'position', 'pnl']
-=======
-    cols = ['high', 'low', 'open', 'close', 'position', 'pnl', 'sdr_reset']
->>>>>>> main
     arr  = df[cols].values.astype(np.float32)
     arr  = np.hstack([arr, np.zeros((len(arr), 1), dtype=np.float32)])  # sumDR, drawdown
     arr  = np.round(arr, dot)
@@ -411,9 +358,5 @@ def build_trades_df(trades, n_trades, df_index):
     }, index=df_index[t[:, COL_OPENTRADE].astype(int)])
 
     results.index.name = 'OpenTrade'
-<<<<<<< HEAD
     return results
 
-=======
-    return results
->>>>>>> main

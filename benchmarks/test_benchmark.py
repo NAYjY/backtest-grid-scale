@@ -5,7 +5,12 @@ import psutil
 import numpy as np
 import pandas as pd 
 
-
+from data import load_ohlcv
+from config import get_sample_grid, cfg
+from pandas_version import run_pandas_version
+from njit_version import run_njit_version
+from data import StrategyParams
+from indicators import calculate_indicators
 # ─── Performance Monitor ──────────────────────────────────────────────────────
 
 class PerformanceMonitor:
@@ -41,35 +46,25 @@ class PerformanceMonitor:
             f"{elapsed:.1f}s")
 
 
-if __name__ == "__main__":
-    SYMBOL       = ['S501!', 'TFEX', 1]
-    interval     = '1h'
-    DATA_DIR     = '/home/nayjy/Workplace/onRunMA/new_src'
-    scr_path     = '/home/nayjy/Workplace/onRunMA/new_src'
-    path = '/home/nayjy/Workplace/compare_claen/'
-    filename = f'SuperDaily_{SYMBOL[0]}_{interval}.csv'
+# if __name__ == "__main__":
+def test_benchmark():
+    symbol    = [cfg['symbol'], cfg['exchange'], 1]
+    interval  = cfg['interval']
+    data_dir  = cfg['data_dir']
+    output_path= cfg['output_path']
+    filename = f'SuperDaily_{symbol[0]}_{interval}.csv'
 
+    df_raw = load_ohlcv(symbol, interval, data_dir)
 
-
-    from data import load_ohlcv
-    df = load_ohlcv(SYMBOL, interval)
-
-    from config import get_sample_grid
-    from pandas_version import run_pandas_version
-    from njit_version import run_njit_version
-    from data import StrategyParams
-    from indicators import calculate_indicators
-    print('Start')
     len_grid, grid = get_sample_grid()
-    print('Get grind')
     monitor = PerformanceMonitor()
     monitor.record("Start Pandas")
     for params in grid:
-        df = calculate_indicators(df, params)
+        df = calculate_indicators(df_raw.copy(), params)
         run_pandas_version(
         df=df,
         params=params,
-        output_path=path,
+        output_path=output_path,
         filename=filename
         )
     monitor.record("End Pandas")
@@ -77,11 +72,11 @@ if __name__ == "__main__":
     # RUN NJIT VERSION
     monitor.record("Start Numba")
     for params in grid:        
-        df = calculate_indicators(df, params)
+        df = calculate_indicators(df_raw.copy(), params)
         run_njit_version(
         df=df,
         params=params,
-        output_path=path,
+        output_path=output_path,
         filename=filename
         )
     monitor.record("End Numba")

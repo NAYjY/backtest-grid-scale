@@ -15,9 +15,8 @@ class StrategyParams:
     sl_pct_l:    float
     sl_pct_s:    float
     
-def load_ohlcv(symbol, interval):
-    DATA_DIR     = '/home/nayjy/Workplace/onRunMA/new_src'
-    path = f'{DATA_DIR}/{symbol[1]}_{symbol[0]}_{interval}.csv'
+def load_ohlcv(symbol, interval, data_dir: str)-> pd.DataFrame:
+    path = f'{data_dir}/{symbol[1]}_{symbol[0]}_{interval}.csv'
     df = pd.read_csv(path, index_col='time')
     df.index = pd.to_datetime(df.index)
     return df

@@ -1,0 +1,18 @@
+# symbol
+symbol:   "S501!"
+exchange: "TFEX"
+interval: "1h"
+
+# paths
+data_dir: "benchmarks/test_data"
+output_path: "results/"
+
+# date ranges
+backtest_start: "2022-01-01"
+backtest_end:   "2026-12-31"
+view_start:     "2025-01-01"
+view_end:       "2026-03-01"
+
+# screening
+total_type: "Y"
+condition: [-2000.0, 0.0, 0.0, 1.0, 99999.0]
