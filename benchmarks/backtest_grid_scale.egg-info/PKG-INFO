@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: backtest-grid-scale
+Version: 0.1.0
+Summary: Backtesting parameter grid search built to run at scale
+Requires-Python: >=3.10
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: numba
+Requires-Dist: psutil
+Requires-Dist: TA-Lib
+Requires-Dist: pyyaml
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Dynamic: license-file

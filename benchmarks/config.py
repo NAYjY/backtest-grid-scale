@@ -84,4 +84,3 @@ def get_sample_grid(
     len_grid, full_grid = get_search_grid(space)
     sampled = random.sample(full_grid, min(n_samples, len_grid))
     return len(sampled), sampled
-

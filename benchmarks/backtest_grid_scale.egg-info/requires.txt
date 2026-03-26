@@ -1,0 +1,9 @@
+numpy
+pandas
+numba
+psutil
+TA-Lib
+pyyaml
+
+[dev]
+pytest

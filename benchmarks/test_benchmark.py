@@ -14,7 +14,7 @@ from indicators import calculate_indicators
 # ─── Performance Monitor ──────────────────────────────────────────────────────
 
 class PerformanceMonitor:
-    def __init__(self, filename="fast_performance.csv"):
+    def __init__(self, filename="performance.csv"):
         self.filename = filename
         self.start_time = time.time()
         self.process = psutil.Process(os.getpid())
@@ -46,8 +46,8 @@ class PerformanceMonitor:
             f"{elapsed:.1f}s")
 
 
-# if __name__ == "__main__":
-def test_benchmark():
+if __name__ == "__main__":
+# def test_benchmark():
     symbol    = [cfg['symbol'], cfg['exchange'], 1]
     interval  = cfg['interval']
     data_dir  = cfg['data_dir']
