@@ -71,7 +71,7 @@ pytest benchmarks/test_correctness.py -v
 python benchmarks/run_benchmark.py
 ```
 
-Results are saved to `fast_performance.csv` with per-combination timing, memory, and CPU metrics.
+Results are saved to `performance.csv` with per-combination timing, memory, and CPU metrics.
 
 ---
 
@@ -80,7 +80,7 @@ Results are saved to `fast_performance.csv` with per-combination timing, memory,
 | Implementation | Typical Speedup |
 |---|---|
 | Pandas (baseline) | 1× |
-| Numba JIT | **10–100×** |
+| Numba JIT | **4.5–100×** |
 
 Speedup scales with grid size — the larger the parameter search space, the greater the gain.
 
