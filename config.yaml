@@ -10,9 +10,24 @@ output_path: "results/"
 # date ranges
 backtest_start: "2022-01-01"
 backtest_end:   "2026-12-31"
-view_start:     "2025-01-01"
-view_end:       "2026-03-01"
+
 
 # screening
 total_type: "Y"
 condition: [-2000.0, 0.0, 0.0, 1.0, 99999.0]
+
+grid:
+  atr_len_l:    { min: 2,   max: 3,  step: 1   }
+  atr_mult_l:   { min: 0.5, max: 1.0, step: 0.5 }
+
+  atr_len_s:    { min: 2,   max: 3,  step: 1   }
+  atr_mult_s:   { min: 0.5, max: 1.0, step: 0.5 }
+
+  roc_len_l:    { min: 10,  max: 11, step: 5   }
+  roc_thresh_l: { min: 4,   max: 5,  step: 1   }
+
+  roc_len_s:    { min: 60,  max: 61, step: 5   }
+  roc_thresh_s: { min: 4,   max: 5,  step: 1   }
+
+  sl_pct_l:     { min: 3,   max: 4,  step: 1   }
+  sl_pct_s:     { min: 3,   max: 4,  step: 1   }

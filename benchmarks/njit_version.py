@@ -21,8 +21,8 @@ def run_njit_version(
     results = build_trades_df(trades, n_trades, df.index)
     #
     cfg = load_config()
-    s = pd.to_datetime(cfg['view_start'])
-    e = pd.to_datetime(cfg['view_end'])
+    s = pd.to_datetime(cfg['backtest_start'])
+    e = pd.to_datetime(cfg['backtest_end'])
     total_type = cfg['total_type']
     condition = cfg['condition']
     #
