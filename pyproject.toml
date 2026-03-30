@@ -23,7 +23,8 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["benchmarks"]
+where = ["."]
+include = ["backtest_grid_scale*"]
 
 [tool.pytest.ini_options]
 testpaths = ["benchmarks"]

@@ -3,9 +3,9 @@ import numpy as np
 import numba as nb
 import pandas as pd
 import csv
-from data import StrategyParams
+from .data import StrategyParams
 from dataclasses import asdict
-from config import load_config
+from .config import load_config
 import warnings
 warnings.filterwarnings("ignore")
 

@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 import os
-from data import StrategyParams
+from .data import StrategyParams
 from dataclasses import asdict
-from config import load_config
+from .config import load_config
 
 def run_pandas_version(
     df: pd.DataFrame,

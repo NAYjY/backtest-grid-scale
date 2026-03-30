@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 import itertools
-from data import StrategyParams
+from .data import StrategyParams
 import random
 import yaml
 from pathlib import Path

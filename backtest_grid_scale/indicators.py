@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from talib import abstract
-from data import StrategyParams
+from .data import StrategyParams
 
 def calculate_indicators(df: pd.DataFrame, 
                          params: StrategyParams) -> pd.DataFrame:

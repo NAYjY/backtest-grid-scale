@@ -15,14 +15,14 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from config import load_config, get_sample_grid
+from backtest_grid_scale.config import load_config, get_sample_grid
 cfg = load_config()
 
 # ─── Fixtures ────────────────────────────────────────────────────────────────
 
 @pytest.fixture
 def real_df():
-    from data import load_ohlcv
+    from backtest_grid_scale.data import load_ohlcv
     return load_ohlcv(
         symbol   = [cfg['symbol'], cfg['exchange'], 1],
         interval = cfg['interval'],
@@ -31,7 +31,7 @@ def real_df():
 
 @pytest.fixture
 def mock_params():
-    from data import StrategyParams
+    from backtest_grid_scale.data import StrategyParams
     return StrategyParams(
         atr_len_l=3,    atr_len_s=4,
         atr_mult_l=1.5, atr_mult_s=1.5,
@@ -55,9 +55,8 @@ def test_data_loads(real_df):
     assert (real_df['low']  <= real_df['close']).all()
 
 def test_pandas_version_runs(real_df, mock_params):
-    from indicators import calculate_indicators
-    from pandas_version import simulate_trades, add_trade_stats
-    df      = calculate_indicators(real_df.copy(), mock_params)
+    from backtest_grid_scale.indicators import calculate_indicators
+    from backtest_grid_scale.pandas_version import run_pandas_version
     results = simulate_trades(df, mock_params.sl_pct_l, mock_params.sl_pct_s)
     results = add_trade_stats(results)
     assert len(results) > 0
@@ -65,8 +64,8 @@ def test_pandas_version_runs(real_df, mock_params):
     assert 'DrawDown' in results.columns
 
 def test_njit_version_runs(real_df, mock_params):
-    from indicators import calculate_indicators
-    from njit_version import simulate_trades, build_trades_df
+    from backtest_grid_scale.indicators import calculate_indicators
+    from backtest_grid_scale.njit_version import run_njit_version
     df        = calculate_indicators(real_df.copy(), mock_params)
     arr       = df[['open','high','low','close','position']].values.astype(np.float32)
     trades, n = simulate_trades(arr, mock_params.sl_pct_l, mock_params.sl_pct_s)
@@ -78,9 +77,9 @@ def test_njit_version_runs(real_df, mock_params):
 
 # @pytest.mark.skip(reason="enable after phase 2 green")
 def test_pandas_equals_njit(real_df, mock_params):
-    from indicators import calculate_indicators
-    from pandas_version import simulate_trades as pandas_sim, add_trade_stats
-    from njit_version  import simulate_trades as njit_sim, build_trades_df
+    from backtest_grid_scale.indicators import calculate_indicators
+    from backtest_grid_scale.pandas_version import run_pandas_version
+    from backtest_grid_scale.njit_version import run_njit_version
 
     df            = calculate_indicators(real_df.copy(), mock_params)
     pandas_result = add_trade_stats(pandas_sim(df, mock_params.sl_pct_l, mock_params.sl_pct_s))
