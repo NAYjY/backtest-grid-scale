@@ -27,7 +27,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install numpy pandas numba psutil pytest TA-Lib pyyaml
-
+          pip install -e .
       - name: Run tests
         run: |
-          pytest benchmarks/test_benchmark.py -v
+          pytest benchmarks/test_correctness.py -v
