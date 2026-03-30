@@ -1,7 +1,8 @@
 # backtest-grid-scale
 
 > Production system running since 2022 under contract. Open-sourced as a portfolio reference with proprietary logic removed.
-A high-performance backtesting framework for parameter grid search on trading strategies, benchmarking **pure Pandas** against **Numba JIT** implementations. 
+
+A high-performance backtesting framework for parameter grid search on trading strategies, benchmarking **pure Pandas** against **Numba JIT** implementations.
 
 ---
 
@@ -31,6 +32,8 @@ Each parameter combination is evaluated across historical OHLCV data, and result
 pip install -e .
 ```
 
+TA-Lib requires native binaries — see the [TA-Lib installation guide](https://github.com/TA-Lib/ta-lib-python#dependencies) for your platform.
+
 ---
 
 ## Configuration
@@ -55,7 +58,7 @@ grid:
   # ... etc
 ```
 
-For local overrides (e.g. different data path on your machine), create `config.local.yaml` — it takes precedence over `config.yaml` and should be gitignored.
+For local overrides create `config.local.yaml` — it takes precedence over `config.yaml` and is gitignored.
 
 ---
 
@@ -71,7 +74,7 @@ pytest benchmarks/test_correctness.py -v
 python benchmarks/run_benchmark.py
 ```
 
-Results are saved to `performance.csv` with per-combination timing, memory, and CPU metrics.
+Results are saved to `results/performance.csv` with per-combination timing, memory, and CPU metrics.
 
 ---
 
@@ -98,12 +101,16 @@ CI runs the full test suite on Python 3.11 with TA-Lib via GitHub Actions.
 ## Project Structure
 ```
 backtest-grid-scale/
-├── benchmarks/
+├── backtest_grid_scale/       # Core package — importable by external projects
 │   ├── config.py              # Grid search space + parameter builder
+│   ├── data.py                # OHLCV loader + StrategyParams
+│   ├── indicators.py          # SuperTrend + ROC indicators
+│   ├── pandas_version.py      # Reference implementation
+│   └── njit_version.py        # Numba JIT implementation
+├── benchmarks/
 │   ├── run_benchmark.py       # Benchmark runner
 │   └── test_correctness.py    # Pandas vs Numba validation
 ├── config.yaml                # Runtime config + grid parameters
-├── config.local.yaml          # Local overrides (gitignored)
 ├── pyproject.toml
 └── results/                   # Benchmark output (generated)
 ```
