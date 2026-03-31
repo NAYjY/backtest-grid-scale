@@ -1,11 +1,63 @@
+"""
+indicators.py
+-------------
+SuperTrend and ROC indicator computation.
+
+The indicators are ported from the open-source Pine Script strategy
+`Super Trend Daily 2.0 <https://www.tradingview.com/script/1aNKOSH3>`_
+by bennef.  Each call to :func:`calculate_indicators` is stateless — it
+receives a *copy* of the raw OHLCV DataFrame and returns an enriched
+DataFrame with all indicator columns attached.
+
+Column glossary
+~~~~~~~~~~~~~~~
+``atr_l / atr_s``
+    Scaled ATR values for the long / short bands.
+``long_stop_l / short_stop_l``
+    Raw (pre-trail) lower / upper stop levels using the *long* ATR.
+``long_stop_s / short_stop_s``
+    Raw (pre-trail) lower / upper stop levels using the *short* ATR.
+``long_stop_prev_l / short_stop_prev_l``
+    Trailing stop levels for the *long-band* SuperTrend.
+``long_stop_prev_s / short_stop_prev_s``
+    Trailing stop levels for the *short-band* SuperTrend.
+``dir_l / dir_s``
+    Trend direction signals: ``1`` = uptrend, ``-1`` = downtrend.
+``ema_roc_l / ema_roc_s``
+    Smoothed rate-of-change used as a momentum filter.
+``long_signal / short_signal``
+    Boolean entry signals (direction flip + ROC filter confirmed).
+``position``
+    Signed position: ``1`` = long, ``-1`` = short, ``0`` = flat.
+"""
+
 import numpy as np
 import pandas as pd
 from talib import abstract
 from .data import StrategyParams
 
-def calculate_indicators(df: pd.DataFrame, 
+
+def calculate_indicators(df: pd.DataFrame,
                          params: StrategyParams) -> pd.DataFrame:
-    
+    """Compute all SuperTrend + ROC indicators and entry signals.
+
+    Modifies *df* in-place and returns it.  The caller should pass a copy
+    (``df_raw.copy()``) when the original must be preserved.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        OHLCV DataFrame with columns ``open``, ``high``, ``low``, ``close``.
+    params : StrategyParams
+        Strategy parameters for this particular grid point.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The same *df* with indicator and signal columns appended.  Rows
+        where ATR cannot be computed (initial look-back) are dropped.
+    """
+
     df['atr_l'] = params.atr_mult_l * abstract.ATR(
         df['high'], df['low'], df['close'], timeperiod=params.atr_len_l)
     df['atr_s'] = params.atr_mult_s * abstract.ATR(
@@ -44,8 +96,29 @@ def calculate_indicators(df: pd.DataFrame,
     df['position'] = np.where(df['short_signal'], -1, df['position'])
 
     return df
+
+
 # ─── Stops ────────────────────────────────────────────────────────────────────
-def _rolling_max_stop(close, stop):
+
+def _rolling_max_stop(close: np.ndarray, stop: np.ndarray) -> np.ndarray:
+    """Compute trailing *support* stop levels (ratchets upward only).
+
+    For each bar the trailing stop is the maximum of the raw stop value and
+    the previous bar's stop, provided the previous close was **above** the
+    previous trailing stop (i.e. the uptrend is intact).
+
+    Parameters
+    ----------
+    close : np.ndarray
+        Close prices, shape ``(n,)``.
+    stop : np.ndarray
+        Raw (untrailed) lower stop values, shape ``(n,)``.
+
+    Returns
+    -------
+    np.ndarray
+        Trailing stop values aligned to the same bar indices, shape ``(n,)``.
+    """
     stop = stop.copy()
     n = len(close)
     prev = np.zeros(n)
@@ -56,7 +129,26 @@ def _rolling_max_stop(close, stop):
             stop[i] = max(stop[i], prev[i])
     return prev
 
-def _rolling_min_stop(close, stop):
+
+def _rolling_min_stop(close: np.ndarray, stop: np.ndarray) -> np.ndarray:
+    """Compute trailing *resistance* stop levels (ratchets downward only).
+
+    For each bar the trailing stop is the minimum of the raw stop value and
+    the previous bar's stop, provided the previous close was **below** the
+    previous trailing stop (i.e. the downtrend is intact).
+
+    Parameters
+    ----------
+    close : np.ndarray
+        Close prices, shape ``(n,)``.
+    stop : np.ndarray
+        Raw (untrailed) upper stop values, shape ``(n,)``.
+
+    Returns
+    -------
+    np.ndarray
+        Trailing stop values aligned to the same bar indices, shape ``(n,)``.
+    """
     stop = stop.copy()
     n = len(close)
     prev = np.zeros(n)
@@ -67,8 +159,39 @@ def _rolling_min_stop(close, stop):
             stop[i] = min(stop[i], prev[i])
     return prev
 
+
 # ─── Direction ────────────────────────────────────────────────────────────────
-def _calculate_direction(close, stop_up, stop_down, initial_dir=1):
+
+def _calculate_direction(
+    close: np.ndarray,
+    stop_up: np.ndarray,
+    stop_down: np.ndarray,
+    initial_dir: int = 1,
+) -> np.ndarray:
+    """Determine bar-by-bar SuperTrend direction from trailing stops.
+
+    Direction flips from ``-1`` to ``1`` when close crosses above *stop_up*,
+    and from ``1`` to ``-1`` when close crosses below *stop_down*.
+
+    Parameters
+    ----------
+    close : np.ndarray
+        Close prices, shape ``(n,)``.
+    stop_up : np.ndarray
+        Trailing resistance stop (output of :func:`_rolling_min_stop`),
+        shape ``(n,)``.
+    stop_down : np.ndarray
+        Trailing support stop (output of :func:`_rolling_max_stop`),
+        shape ``(n,)``.
+    initial_dir : int, optional
+        Starting direction before the first bar is processed.  Default ``1``.
+
+    Returns
+    -------
+    np.ndarray
+        Direction array of ``1`` (uptrend) and ``-1`` (downtrend),
+        shape ``(n,)``.
+    """
     close = close.copy()
     stop_up = stop_up.copy()
     stop_down = stop_down.copy()
