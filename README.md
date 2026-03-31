@@ -4,55 +4,17 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> Production system running since 2022 under contract.  
-> Open-sourced as a portfolio reference — proprietary logic removed.
+> Production system running since 2022 under contract. Open-sourced as a portfolio reference with proprietary logic removed.
 
-A high-performance backtesting framework for **parameter grid search** on trading strategies.  
-Benchmarks a pure-Pandas reference implementation against a **Numba JIT-compiled** implementation across a configurable grid of strategy parameters applied to OHLCV data.
+A high-performance backtesting framework for parameter grid search on trading strategies, benchmarking **pure Pandas** against **Numba JIT** implementations.
 
----
-
-## Skills Demonstrated
-
-| Area | Detail |
-|---|---|
-| **Python packaging** | Installable library (`pyproject.toml`, `__all__`, public API) |
-| **High-performance computing** | Numba `@njit` compiled loops; 4.5–100× speedup over Pandas baseline |
-| **Numerical computing** | NumPy vectorised operations, ATR / ROC indicator maths |
-| **Data engineering** | Pandas time-series indexing, OHLCV loading, period slicing |
-| **Software architecture** | Clean layered design: config → data → indicators → simulation → reporting |
-| **Testing & validation** | pytest suite; Pandas and Numba outputs verified numerically identical |
-| **CI/CD** | GitHub Actions on every push; TA-Lib C library installed from source |
-| **Configuration management** | YAML config with local-override pattern (`config.local.yaml`) |
-| **Type annotations** | Full type hints throughout; dataclasses for structured parameter objects |
-
----
-
-## Transfers To (Beyond Finance)
-
-The same techniques are used in many industries outside finance:
-
-- **Scientific computing / research** — parameter sweeps, simulation grids
-- **Machine-learning pipelines** — hyperparameter search over time-series data
-- **Data engineering** — high-throughput batch processing with performance benchmarking
-- **Quantitative analysis** — anywhere large datasets must be processed at scale
-
----
-
-## Performance
-
-| Implementation | Typical Speedup |
-|---|---|
-| Pandas (baseline) | 1× |
-| Numba JIT | **4.5–100×** |
-
-Speedup scales with grid size — the larger the parameter search space, the greater the gain.
+The Numba path runs **4.5–100×** faster than the Pandas baseline — the bigger the grid, the wider the gap.
 
 ---
 
 ## Strategy
 
-Implements the open-source [Super Trend Daily 2.0](https://www.tradingview.com/script/1aNKOSH3-Super-Trend-Daily-2-0-Alerts-BF/) by bennef — ported from Pine Script to Python as the benchmark subject.  Internal execution and infrastructure are proprietary.
+Implements the open-source [Super Trend Daily 2.0](https://www.tradingview.com/script/1aNKOSH3-Super-Trend-Daily-2-0-Alerts-BF/) by bennef — ported from Pine Script to Python as the benchmark subject. Internal execution and infrastructure are proprietary.
 
 ---
 
@@ -63,7 +25,7 @@ The framework runs a full grid search over strategy parameters and compares two 
 | Backend | Description |
 |---|---|
 | **Pandas** | Pure Python reference implementation |
-| **Numba JIT** | `@njit`-compiled implementation for large-scale runs |
+| **Numba JIT** | Compiled implementation using `@njit` |
 
 Each parameter combination is evaluated across historical OHLCV data, and results are validated for numerical equivalence between both backends before benchmarking.
 
@@ -122,6 +84,17 @@ Results are saved to `results/performance.csv` with per-combination timing, memo
 
 ---
 
+## Performance
+
+| Implementation | Typical Speedup |
+|---|---|
+| Pandas (baseline) | 1× |
+| Numba JIT | **4.5–100×** |
+
+Speedup scales with grid size — the larger the parameter search space, the greater the gain.
+
+---
+
 ## Testing
 ```bash
 pytest benchmarks/ -v
@@ -136,13 +109,13 @@ CI runs the full test suite on Python 3.11 with TA-Lib via GitHub Actions.
 backtest-grid-scale/
 ├── backtest_grid_scale/       # Core package — importable by external projects
 │   ├── config.py              # Grid search space + parameter builder
-│   ├── data.py                # OHLCV loader + StrategyParams dataclass
+│   ├── data.py                # OHLCV loader + StrategyParams
 │   ├── indicators.py          # SuperTrend + ROC indicators
-│   ├── pandas_version.py      # Reference implementation (Pandas)
+│   ├── pandas_version.py      # Reference implementation
 │   └── njit_version.py        # Numba JIT implementation
 ├── benchmarks/
-│   ├── run_benchmark.py       # Benchmark runner with resource monitor
-│   └── test_correctness.py    # Numerical equivalence validation
+│   ├── run_benchmark.py       # Benchmark runner
+│   └── test_correctness.py    # Pandas vs Numba validation
 ├── config.yaml                # Runtime config + grid parameters
 ├── pyproject.toml
 └── results/                   # Benchmark output (generated)

@@ -54,7 +54,7 @@ def mock_params():
     )
 
 
-# ─── Phase 1: CI validation ───────────────────────────────────────────────────
+# ─── Phase 1: CI sanity ───────────────────────────────────────────────────────
 
 def test_ci_is_working():
     """Trivial assertion — confirms the test runner is operational."""
