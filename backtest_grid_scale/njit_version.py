@@ -5,7 +5,8 @@ Numba JIT-compiled trade simulation and performance screening.
 
 This module implements the same strategy logic as
 :mod:`backtest_grid_scale.pandas_version` but uses ``@nb.njit``-decorated
-functions for the hot loops, yielding a 4.5–100× speedup on large grids.
+functions for the hot loops.  Typical speedup is 4.5–100× over the Pandas
+baseline, as measured by ``benchmarks/run_benchmark.py``.
 
 Architecture
 ~~~~~~~~~~~~

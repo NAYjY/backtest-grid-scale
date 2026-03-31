@@ -15,7 +15,7 @@ The script:
    ``config.yaml``.
 2. Runs the **Pandas** implementation over every sampled parameter set while
    recording RAM, CPU, and wall-clock time via :class:`PerformanceMonitor`.
-3. Repeats step 2 with the **Numba JIT** implementation.
+3. Repeats step 2 with the **Numba JIT** backend instead of Pandas.
 4. Writes ``performance.csv`` to the working directory with one row per
    checkpoint.
 
