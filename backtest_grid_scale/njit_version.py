@@ -16,24 +16,12 @@ The pipeline has three layers:
    operate on raw ``numpy.ndarray`` objects to avoid Python overhead.
 3. **DataFrame reconstruction** — :func:`build_trades_df` maps the Numba
    output array back to a time-indexed Pandas DataFrame.
-
-Public functions
-~~~~~~~~~~~~~~~~
-run_njit_version       -- End-to-end runner: simulate → screen → write CSV.
-simulate_trades        -- ``@njit`` bar-by-bar trade simulation.
-screen_parameter_set   -- ``@njit`` per-period statistics and pass/fail gate.
-build_period_indices   -- Map a DatetimeIndex to integer period boundaries.
-build_report_row       -- Assemble a single-row summary DataFrame.
-append_to_csv          -- Append a DataFrame row to a CSV file.
-run_screening          -- Orchestrate screening for one parameter set.
-build_trades_df        -- Reconstruct a DataFrame from the Numba output array.
 """
 
 import os
 import numpy as np
 import numba as nb
 import pandas as pd
-import csv
 from .data import StrategyParams
 from dataclasses import asdict
 from .config import load_config

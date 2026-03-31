@@ -7,13 +7,6 @@ reporting.
 This module is the *baseline* against which the Numba JIT implementation
 (:mod:`backtest_grid_scale.njit_version`) is benchmarked.  All arithmetic is
 performed with standard Pandas / NumPy operations — no compiled extensions.
-
-Public functions
-~~~~~~~~~~~~~~~~
-run_pandas_version          -- End-to-end runner: simulate → report → write CSV.
-generate_performance_report -- Aggregate trade results into a summary DataFrame.
-simulate_trades             -- Bar-by-bar trade simulation loop (Python).
-add_trade_stats             -- Enrich the raw trade list with derived metrics.
 """
 
 import numpy as np
