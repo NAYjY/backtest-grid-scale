@@ -1,15 +1,3 @@
-# benchmarks/test_correctness.py
-import numpy as np
-import pandas as pd
-from talib import abstract
-from numba import njit
-import os
-import csv
-import time
-import psutil
-import warnings
-# benchmarks/test_correctness.py
-
 import os
 import pytest
 import numpy as np
@@ -94,16 +82,16 @@ def test_pandas_equals_njit(real_df, mock_params):
     assert round(pandas_result.pnl.sum(), 2) == round(njit_result.pnl.sum(), 2), \
         f"total pnl differs: pandas={pandas_result.pnl.sum():.2f} njit={njit_result.pnl.sum():.2f}"
     assert round(pandas_result.pnl.max(), 2) == round(njit_result.pnl.max(), 2), \
-        f"best trade differs"
+        "best trade differs"
     assert round(pandas_result.pnl.min(), 2) == round(njit_result.pnl.min(), 2), \
-        f"worst trade differs"
+        "worst trade differs"
 
 # ─── Phase 4: TradingView validation ─────────────────────────────────────────
 
 @pytest.mark.skip(reason="TradingView export not ready")
 def test_matches_tradingview(real_df, mock_params):
-    from indicators import calculate_indicators
-    from njit_version import simulate_trades, build_trades_df
+    from backtest_grid_scale.indicators import calculate_indicators
+    from backtest_grid_scale.njit_version import simulate_trades, build_trades_df
 
     tv        = pd.read_csv('benchmarks/test_data/tv_reference.csv')
     df        = calculate_indicators(real_df.copy(), mock_params)

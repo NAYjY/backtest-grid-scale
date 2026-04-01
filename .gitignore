@@ -1,7 +1,16 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
 *.egg-info/
 .eggs/
+dist/
+build/
+
+# Local config override
 config.local.yaml
+
+# Benchmark output
+results/*.csv
+performance.csv

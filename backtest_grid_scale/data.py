@@ -14,8 +14,8 @@ class StrategyParams:
     roc_thresh_s: float
     sl_pct_l:    float
     sl_pct_s:    float
-    
-def load_ohlcv(symbol, interval, data_dir: str)-> pd.DataFrame:
+
+def load_ohlcv(symbol, interval, data_dir: str) -> pd.DataFrame:
     path = f'{data_dir}/{symbol[1]}_{symbol[0]}_{interval}.csv'
     df = pd.read_csv(path, index_col='time')
     df.index = pd.to_datetime(df.index)

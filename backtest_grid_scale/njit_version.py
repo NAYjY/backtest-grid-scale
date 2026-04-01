@@ -2,7 +2,6 @@ import os
 import numpy as np
 import numba as nb
 import pandas as pd
-import csv
 from .data import StrategyParams
 from dataclasses import asdict
 from .config import load_config
@@ -194,15 +193,10 @@ def run_screening(
     # ── Build array ───────────────────────────────────────────────────────────
     cols = ['high', 'low', 'open', 'close', 'position', 'pnl']
     arr  = df[cols].values.astype(np.float32)
-    arr  = np.hstack([arr, np.zeros((len(arr), 1), dtype=np.float32)])  # sumDR, drawdown
+    arr  = np.hstack([arr, np.zeros((len(arr), 1), dtype=np.float32)])  # drawdown col
     arr  = np.round(arr, dot)
 
-    '''
-    fix this to choose one , cause del SDR
-    '''
-    # # ── Date components — computed once, used for both F1Y and period indices ─
-    # compute once
-    year_periods = pd.to_datetime(df.index).to_period('Y')
+    year_periods  = pd.to_datetime(df.index).to_period('Y')
     month_periods = pd.to_datetime(df.index).to_period('M')
     qtr_periods   = pd.to_datetime(df.index).to_period('Q')
 

@@ -1,8 +1,14 @@
 # backtest-grid-scale
 
+[![CI](https://github.com/NAYjY/backtest-grid-scale/actions/workflows/main.yml/badge.svg)](https://github.com/NAYjY/backtest-grid-scale/actions/workflows/main.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 > Production system running since 2022 under contract. Open-sourced as a portfolio reference with proprietary logic removed.
 
 A high-performance backtesting framework for parameter grid search on trading strategies, benchmarking **pure Pandas** against **Numba JIT** implementations.
+
+The Numba path runs **4.5–100×** faster than the Pandas baseline — the bigger the grid, the wider the gap.
 
 ---
 
@@ -27,7 +33,7 @@ Each parameter combination is evaluated across historical OHLCV data, and result
 
 ## Installation
 
-**Requirements:** Python 3.11+, TA-Lib
+**Requirements:** Python 3.10+, TA-Lib
 ```bash
 pip install -e .
 ```

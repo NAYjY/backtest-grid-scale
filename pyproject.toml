@@ -1,12 +1,31 @@
 [build-system]
 requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta" 
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "backtest-grid-scale"
 version = "0.1.0"
 description = "Backtesting parameter grid search built to run at scale"
+readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
+keywords = [
+    "backtesting", "trading", "grid-search", "numba", "quantitative-finance",
+    "parameter-optimization", "jit", "high-performance", "time-series",
+    "numpy", "pandas", "benchmarking", "simulation", "python"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering",
+]
 
 dependencies = [
     "numpy",
@@ -21,6 +40,10 @@ dependencies = [
 dev = [
     "pytest",
 ]
+
+[project.urls]
+Repository = "https://github.com/NAYjY/backtest-grid-scale"
+Issues = "https://github.com/NAYjY/backtest-grid-scale/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -2,14 +2,13 @@ import os
 import time
 import csv
 import psutil
-import numpy as np
-import pandas as pd 
 
 from backtest_grid_scale.config import get_sample_grid, cfg
-from backtest_grid_scale.data import load_ohlcv, StrategyParams
+from backtest_grid_scale.data import load_ohlcv
 from backtest_grid_scale.indicators import calculate_indicators
 from backtest_grid_scale.pandas_version import run_pandas_version
 from backtest_grid_scale.njit_version import run_njit_version
+
 # ─── Performance Monitor ──────────────────────────────────────────────────────
 
 class PerformanceMonitor:
@@ -46,7 +45,6 @@ class PerformanceMonitor:
 
 
 if __name__ == "__main__":
-# def test_benchmark():
     symbol    = [cfg['symbol'], cfg['exchange'], 1]
     interval  = cfg['interval']
     data_dir  = cfg['data_dir']
@@ -61,21 +59,20 @@ if __name__ == "__main__":
     for params in grid:
         df = calculate_indicators(df_raw.copy(), params)
         run_pandas_version(
-        df=df,
-        params=params,
-        output_path=output_path,
-        filename=filename
+            df=df,
+            params=params,
+            output_path=output_path,
+            filename=filename,
         )
     monitor.record("End Pandas")
-        
-    # RUN NJIT VERSION
+
     monitor.record("Start Numba")
-    for params in grid:        
+    for params in grid:
         df = calculate_indicators(df_raw.copy(), params)
         run_njit_version(
-        df=df,
-        params=params,
-        output_path=output_path,
-        filename=filename
+            df=df,
+            params=params,
+            output_path=output_path,
+            filename=filename,
         )
     monitor.record("End Numba")
