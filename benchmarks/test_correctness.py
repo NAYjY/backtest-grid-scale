@@ -1,38 +1,15 @@
-"""
-test_correctness.py
--------------------
-Correctness test suite for the ``backtest_grid_scale`` package.
-
-Test phases
-~~~~~~~~~~~
-1. **CI sanity** — trivial assertion to confirm the test runner is working.
-2. **Smoke tests** — verify that data loading, the Pandas implementation, and
-   the Numba JIT implementation all run without errors.
-3. **Numerical equivalence** — assert that the Pandas and Numba backends
-   produce identical trade counts and PnL figures (rounded to 2 d.p.).
-4. **TradingView validation** — (skipped) compare against a TradingView export
-   once the reference CSV is available.
-
-Run with::
-
-    pytest benchmarks/test_correctness.py -v
-"""
-
 import os
 import pytest
 import numpy as np
 import pandas as pd
 
 from backtest_grid_scale.config import load_config, get_sample_grid
-
 cfg = load_config()
-
 
 # ─── Fixtures ────────────────────────────────────────────────────────────────
 
 @pytest.fixture
 def real_df():
-    """Load the test OHLCV CSV configured in ``config.yaml``."""
     from backtest_grid_scale.data import load_ohlcv
     return load_ohlcv(
         symbol   = [cfg['symbol'], cfg['exchange'], 1],
@@ -40,10 +17,8 @@ def real_df():
         data_dir = cfg['data_dir']
     )
 
-
 @pytest.fixture
 def mock_params():
-    """Return a fixed :class:`StrategyParams` instance for deterministic tests."""
     from backtest_grid_scale.data import StrategyParams
     return StrategyParams(
         atr_len_l=3,    atr_len_s=4,
@@ -53,27 +28,21 @@ def mock_params():
         sl_pct_l=5.0,   sl_pct_s=6.0,
     )
 
-
 # ─── Phase 1: CI sanity ───────────────────────────────────────────────────────
 
 def test_ci_is_working():
-    """Trivial assertion — confirms the test runner is operational."""
     assert 1 + 1 == 2
-
 
 # ─── Phase 2: versions run without error ─────────────────────────────────────
 
 def test_data_loads(real_df):
-    """OHLCV DataFrame loads with correct shape and OHLC ordering."""
     assert len(real_df) > 0
-    assert all(col in real_df.columns
-               for col in ['open', 'high', 'low', 'close'])
+    assert all(col in real_df.columns 
+               for col in ['open','high','low','close'])
     assert (real_df['high'] >= real_df['close']).all()
     assert (real_df['low']  <= real_df['close']).all()
 
-
 def test_pandas_version_runs(real_df, mock_params):
-    """Pandas simulation completes and returns trade-level results."""
     from backtest_grid_scale.indicators import calculate_indicators
     from backtest_grid_scale.pandas_version import simulate_trades, add_trade_stats
     df      = calculate_indicators(real_df.copy(), mock_params)
@@ -83,9 +52,7 @@ def test_pandas_version_runs(real_df, mock_params):
     assert 'pnl' in results.columns
     assert 'DrawDown' in results.columns
 
-
 def test_njit_version_runs(real_df, mock_params):
-    """Numba JIT simulation completes and returns trade-level results."""
     from backtest_grid_scale.indicators import calculate_indicators
     from backtest_grid_scale.njit_version import simulate_trades, build_trades_df
     df        = calculate_indicators(real_df.copy(), mock_params)
@@ -95,11 +62,10 @@ def test_njit_version_runs(real_df, mock_params):
     assert len(results) > 0
     assert 'pnl' in results.columns
 
-
 # ─── Phase 3: correctness ─────────────────────────────────────────────────────
 
+# @pytest.mark.skip(reason="enable after phase 2 green")
 def test_pandas_equals_njit(real_df, mock_params):
-    """Pandas and Numba backends produce numerically identical results."""
     from backtest_grid_scale.indicators import calculate_indicators
     from backtest_grid_scale.pandas_version import simulate_trades as pandas_sim, add_trade_stats
     from backtest_grid_scale.njit_version import simulate_trades as njit_sim, build_trades_df
@@ -120,12 +86,10 @@ def test_pandas_equals_njit(real_df, mock_params):
     assert round(pandas_result.pnl.min(), 2) == round(njit_result.pnl.min(), 2), \
         "worst trade differs"
 
-
 # ─── Phase 4: TradingView validation ─────────────────────────────────────────
 
 @pytest.mark.skip(reason="TradingView export not ready")
 def test_matches_tradingview(real_df, mock_params):
-    """Compare simulation output against a TradingView reference export."""
     from backtest_grid_scale.indicators import calculate_indicators
     from backtest_grid_scale.njit_version import simulate_trades, build_trades_df
 

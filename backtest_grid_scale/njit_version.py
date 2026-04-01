@@ -1,23 +1,3 @@
-"""
-njit_version.py
----------------
-Numba JIT-compiled trade simulation and performance screening.
-
-This module implements the same strategy logic as
-:mod:`backtest_grid_scale.pandas_version` but uses ``@nb.njit``-decorated
-functions for the hot loops, yielding a 4.5–100× speedup on large grids.
-
-Architecture
-~~~~~~~~~~~~
-The pipeline has three layers:
-
-1. **Python / Pandas** — orchestration, date arithmetic, CSV I/O.
-2. **Numba JIT** — :func:`simulate_trades` and :func:`screen_parameter_set`
-   operate on raw ``numpy.ndarray`` objects to avoid Python overhead.
-3. **DataFrame reconstruction** — :func:`build_trades_df` maps the Numba
-   output array back to a time-indexed Pandas DataFrame.
-"""
-
 import os
 import numpy as np
 import numba as nb
@@ -28,32 +8,13 @@ from .config import load_config
 import warnings
 warnings.filterwarnings("ignore")
 
-
 def run_njit_version(
     df: pd.DataFrame,
     params: StrategyParams,
     output_path: str,
     filename: str,
 ) -> pd.DataFrame:
-    """Run a full Numba-accelerated simulation and optionally write results.
 
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        OHLCV + indicator DataFrame produced by
-        :func:`~backtest_grid_scale.indicators.calculate_indicators`.
-    params : StrategyParams
-        Strategy parameters for this grid point.
-    output_path : str
-        Directory path where the output CSV is written.
-    filename : str
-        Base filename (without directory) for the output CSV.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Trade-level results DataFrame produced by :func:`build_trades_df`.
-    """
     arr = df[['open','high','low','close','position']].values.astype(np.float32)
     trades, n_trades = simulate_trades(arr, params.sl_pct_l, params.sl_pct_s)
     results = build_trades_df(trades, n_trades, df.index)
@@ -66,9 +27,8 @@ def run_njit_version(
     #
     run_screening(results[['high','low','open','close','position','pnl']],s,e,total_type,params,condition,output_path,filename)
 
+
     return results
-
-
 # ─── Numba: all math ──────────────────────────────────────────────────────────
 
 @nb.njit
@@ -77,44 +37,6 @@ def screen_parameter_set(
     period_indices: np.ndarray,   # CSV column boundaries — user freq (M/Q/Y)
     thresholds:     np.ndarray,   # [min_pnl, winR, pf, min_n, max_n]
 ) -> tuple:
-    """Compute per-period statistics and apply pass/fail screening.
-
-    This ``@njit`` function operates entirely on raw arrays to avoid Python
-    overhead inside tight grid-search loops.
-
-    Parameters
-    ----------
-    trades : np.ndarray, shape (n_trades, 7+)
-        Trade array with at least 7 columns.  Column layout:
-
-        * 0 ``COL_HIGH``     — trade high
-        * 1 ``COL_LOW``      — trade low
-        * 2 ``COL_OPEN``     — entry price
-        * 3 ``COL_CLOSE``    — exit price
-        * 4 ``COL_POSITION`` — direction (``1`` long, ``-1`` short)
-        * 5 ``COL_PNL``      — trade PnL
-        * 6 ``COL_DRAWDOWN`` — computed in-place (initialised to 0)
-    period_indices : np.ndarray of int64, shape (n_periods + 1,)
-        Row boundaries for each reporting period.  The last element must
-        equal ``len(trades)``.
-    thresholds : np.ndarray, shape (5,)
-        Screening thresholds:
-        ``[min_total_pnl, min_win_rate, min_profit_factor, min_trades, max_trades]``.
-
-    Returns
-    -------
-    tuple
-        ``(passed, period_pnl, period_dd, win_rate, profit_factor,
-        pnl_long, pnl_short)``
-
-        * *passed*        — ``True`` if all thresholds are met.
-        * *period_pnl*    — PnL sum per reporting period.
-        * *period_dd*     — worst draw-down per reporting period.
-        * *win_rate*      — fraction of winning trades.
-        * *profit_factor* — gross profit / |gross loss|.
-        * *pnl_long*      — total PnL from long trades.
-        * *pnl_short*     — total PnL from short trades.
-    """
 
     # ─── Column indices ────────────────────────────────────────────────────────────
     COL_HIGH      = 0
@@ -151,6 +73,7 @@ def screen_parameter_set(
     period_pnl   = np.zeros(n_periods, dtype=np.float64)
     period_dd    = np.zeros(n_periods, dtype=np.float64)
 
+
     for p in range(n_periods):
         lo = period_indices[p]
         hi = period_indices[p + 1]
@@ -172,33 +95,20 @@ def screen_parameter_set(
 
     return (
         passed,
-        period_pnl, period_dd,
-        win_rate, profit_factor, pnl_long, pnl_short
+        period_pnl, period_dd, 
+        win_rate, profit_factor,pnl_long, pnl_short
     )
 
 
 # ─── Python: build period indices ─────────────────────────────────────────────
 
 def build_period_indices(df: pd.DataFrame, freq: str, periods) -> tuple:
-    """Map a period-indexed array to integer row-boundary arrays.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Trade DataFrame whose row positions define the index.
-    freq : str
-        Reporting frequency: ``'M'`` (monthly), ``'Q'`` (quarterly),
-        or ``'Y'`` (yearly).
-    periods : pandas.PeriodIndex
-        Pre-computed period index matching *df*'s datetime index at *freq*.
-
-    Returns
-    -------
-    tuple[np.ndarray, list[str]]
-        * ``period_indices`` — integer array of shape ``(n_periods + 1,)``;
-          the last element is ``len(df)``.
-        * ``period_labels`` — list of human-readable column name strings.
     """
+    Returns (period_indices, period_labels).
+    freq: 'M' | 'Q' | 'Y'
+    period_indices shape: (n_periods + 1,) — last element is len(df).
+    """
+    # periods = df.index.to_period(freq)
     unique  = periods.unique().sort_values()
     labels  = []
     indices = []
@@ -234,38 +144,6 @@ def build_report_row(
     profit_factor: float,
     n_trades:      int,
 ) -> pd.DataFrame:
-    """Assemble a single-row summary DataFrame for one parameter set.
-
-    Parameters
-    ----------
-    params : dict
-        Strategy parameter values (from ``dataclasses.asdict``).
-    period_labels : list[str]
-        Column names for per-period PnL/DD columns.
-    period_pnl : np.ndarray
-        PnL sum for each reporting period.
-    period_dd : np.ndarray
-        Worst draw-down for each reporting period.
-    total_pnl : float
-        Aggregate PnL across all periods.
-    total_pnl_l : float
-        Aggregate PnL from long trades.
-    total_pnl_s : float
-        Aggregate PnL from short trades.
-    total_dd : float
-        Worst draw-down across all periods.
-    win_rate : float
-        Fraction of winning trades in ``[0, 1]``.
-    profit_factor : float
-        Gross profit divided by absolute gross loss.
-    n_trades : int
-        Total number of trades.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Single-row DataFrame ready to be appended to a results CSV.
-    """
     data = asdict(params)
     for i, label in enumerate(period_labels):
         data[label]            = period_pnl[i]
@@ -279,25 +157,12 @@ def build_report_row(
         'Total_S':       total_pnl_s,
         'Total_DD':      total_dd,
     })
+    
 
     return pd.DataFrame(data, index=[0])
 
 
-def append_to_csv(row: pd.DataFrame, path: str, filename: str) -> None:
-    """Append a single-row DataFrame to a CSV file.
-
-    Creates the file with a header on the first call; subsequent calls append
-    without repeating the header.
-
-    Parameters
-    ----------
-    row : pandas.DataFrame
-        Single-row summary DataFrame produced by :func:`build_report_row`.
-    path : str
-        Directory where the CSV file is located (or will be created).
-    filename : str
-        Filename within *path*.
-    """
+def append_to_csv(row: pd.DataFrame, path: str, filename: str):
     filepath = os.path.join(path, filename)
     header   = not os.path.isfile(filepath)
     row.to_csv(filepath, index=False, header=header, mode='a')
@@ -307,44 +172,15 @@ def append_to_csv(row: pd.DataFrame, path: str, filename: str) -> None:
 
 def run_screening(
     df_trades:   pd.DataFrame,
-    date_start,
-    date_end,
-    freq:        str,
-    params:      StrategyParams,
+    date_start:  str,
+    date_end:    str,
+    freq:        str,        # 'M' | 'Q' | 'Y' — CSV column granularity
+    params:      dict,       # parameter metadata written into every CSV row
     thresholds:  np.ndarray,
     output_path: str,
     filename:    str,
     dot:         int = 2,
 ):
-    """Orchestrate the full screening pipeline for one parameter set.
-
-    1. Slice the trade DataFrame to the backtest date range.
-    2. Apply a quick PnL pre-filter to skip obviously failing combinations.
-    3. Build period indices and call :func:`screen_parameter_set` via Numba.
-    4. If the parameter set passes all thresholds, write the summary row to CSV.
-
-    Parameters
-    ----------
-    df_trades : pandas.DataFrame
-        Trade-level DataFrame with columns ``high``, ``low``, ``open``,
-        ``close``, ``position``, ``pnl``.
-    date_start : datetime-like
-        Start of the evaluation window (inclusive).
-    date_end : datetime-like
-        End of the evaluation window (inclusive).
-    freq : str
-        Reporting frequency for CSV columns: ``'M'``, ``'Q'``, or ``'Y'``.
-    params : StrategyParams
-        Strategy parameters written to every CSV row.
-    thresholds : np.ndarray, shape (5,)
-        Screening thresholds passed through to :func:`screen_parameter_set`.
-    output_path : str
-        Directory for the output CSV file.
-    filename : str
-        Base filename for the output CSV.
-    dot : int, optional
-        Number of decimal places for rounding the trades array.  Default ``2``.
-    """
     if df_trades.empty:
         return None, None
 
@@ -352,26 +188,24 @@ def run_screening(
     if df.empty or df['pnl'].sum() < thresholds[0]:
         return None, None
 
+    
+
     # ── Build array ───────────────────────────────────────────────────────────
     cols = ['high', 'low', 'open', 'close', 'position', 'pnl']
     arr  = df[cols].values.astype(np.float32)
-    arr  = np.hstack([arr, np.zeros((len(arr), 1), dtype=np.float32)])  # drawdown column
+    arr  = np.hstack([arr, np.zeros((len(arr), 1), dtype=np.float32)])  # drawdown col
     arr  = np.round(arr, dot)
 
-    # ── Date components — computed once, used for both F1Y and period indices ─
     year_periods  = pd.to_datetime(df.index).to_period('Y')
     month_periods = pd.to_datetime(df.index).to_period('M')
     qtr_periods   = pd.to_datetime(df.index).to_period('Q')
 
     # ── Period indices — two calls, two purposes ──────────────────────────────
-    period_indices, period_labels = build_period_indices(
-        df, freq,
-        qtr_periods if freq == 'Q' else month_periods if freq == 'M' else year_periods
-    )
+    period_indices, period_labels = build_period_indices(df,freq,qtr_periods if freq=='Q' else month_periods if freq=='M' else year_periods)   # CSV columns
 
     # ── Numba ─────────────────────────────────────────────────────────────────
     (passed,
-     period_pnl, period_dd,
+     period_pnl, period_dd, 
      win_rate, profit_factor,
      pnl_long, pnl_short) = screen_parameter_set(
         arr, period_indices, thresholds
@@ -398,37 +232,24 @@ def run_screening(
     append_to_csv(row, output_path, filename)
 
 
-# ─── Trade Simulation ─────────────────────────────────────────────────────────
 
+# ─── Trade Simulation ─────────────────────────────────────────────────────────
 @nb.njit
 def simulate_trades(arr, sl_pct_l, sl_pct_s, max_trades=8000):
-    """Simulate bar-by-bar trade execution (Numba JIT).
+    """
+    Simulate bar-by-bar trade execution.
 
     Parameters
     ----------
-    arr : np.ndarray, shape (n_bars, 5)
-        OHLCV bar data with columns:
-
-        * 0 ``IN_OPEN``     — open price
-        * 1 ``IN_HIGH``     — high price
-        * 2 ``IN_LOW``      — low price
-        * 3 ``IN_CLOSE``    — close price
-        * 4 ``IN_POSITION`` — entry signal (``1`` long, ``-1`` short, ``0`` flat)
-    sl_pct_l : float
-        Stop-loss distance as a percentage of entry price for long trades.
-    sl_pct_s : float
-        Stop-loss distance as a percentage of entry price for short trades.
-    max_trades : int, optional
-        Pre-allocated number of output rows.  Increase if a grid point can
-        produce more than 8 000 trades.  Default ``8000``.
+    arr        : np.ndarray (n_bars, 5) — IN_OPEN/HIGH/LOW/CLOSE/POSITION
+    sl_pct_l   : float — stop loss % for long trades
+    sl_pct_s   : float — stop loss % for short trades
+    max_trades : int   — pre-allocated output rows (use len(arr) // 2)
 
     Returns
     -------
-    tuple[np.ndarray, int]
-        * ``trades`` — array of shape ``(max_trades, 7)`` with columns
-          ``COL_HIGH``, ``COL_LOW``, ``COL_OPEN``, ``COL_CLOSE``,
-          ``COL_POSITION``, ``COL_PNL``, ``COL_OPENTRADE``.
-        * ``n_trades`` — number of valid (filled) rows in *trades*.
+    trades : np.ndarray (max_trades, 9) — cols defined by COL_* above
+    n_trades : int — valid row count
     """
     # ─── Input array columns (OHLCV bar data) ─────────────────────────────────────
     IN_OPEN     = 0
@@ -501,25 +322,15 @@ def simulate_trades(arr, sl_pct_l, sl_pct_s, max_trades=8000):
     return trades, i_row
 
 
-def build_trades_df(trades: np.ndarray, n_trades: int, df_index: pd.Index) -> pd.DataFrame:
-    """Reconstruct a labelled DataFrame from the Numba trade output array.
+def build_trades_df(trades, n_trades, df_index):
+    """
+    Map numba output array to DataFrame with timestamps.
 
     Parameters
     ----------
-    trades : np.ndarray, shape (max_trades, 7)
-        Raw output array from :func:`simulate_trades`.
-    n_trades : int
-        Number of valid rows (as returned alongside *trades*).
-    df_index : pandas.Index
-        Original bar-data DatetimeIndex used to map integer row positions back
-        to timestamps.
-
-    Returns
-    -------
-    pandas.DataFrame
-        One row per trade with columns ``high``, ``low``, ``open``, ``close``,
-        ``position``, ``pnl``.  The index is named ``OpenTrade`` and contains
-        the entry bar timestamps.
+    trades   : np.ndarray — output of simulate_trades
+    n_trades : int        — valid row count from simulate_trades
+    df_index : pd.Index   — original bar data index (timestamps)
     """
     COL_HIGH       = 0
     COL_LOW        = 1
@@ -527,8 +338,8 @@ def build_trades_df(trades: np.ndarray, n_trades: int, df_index: pd.Index) -> pd
     COL_CLOSE      = 3
     COL_POSITION   = 4
     COL_PNL        = 5
-    COL_OPENTRADE  = 6
-
+    COL_OPENTRADE  = 6 
+    
     t = trades[:n_trades]
 
     results = pd.DataFrame({
@@ -542,3 +353,4 @@ def build_trades_df(trades: np.ndarray, n_trades: int, df_index: pd.Index) -> pd
 
     results.index.name = 'OpenTrade'
     return results
+

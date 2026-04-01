@@ -1,14 +1,3 @@
-"""
-pandas_version.py
------------------
-Pure-Pandas reference implementation of trade simulation and performance
-reporting.
-
-This module is the *baseline* against which the Numba JIT implementation
-(:mod:`backtest_grid_scale.njit_version`) is benchmarked.  All arithmetic is
-performed with standard Pandas / NumPy operations — no compiled extensions.
-"""
-
 import numpy as np
 import pandas as pd
 import os
@@ -16,70 +5,33 @@ from .data import StrategyParams
 from dataclasses import asdict
 from .config import load_config
 
-
 def run_pandas_version(
     df: pd.DataFrame,
     params: StrategyParams,
     output_path: str,
     filename: str,
 ) -> pd.DataFrame:
-    """Run a full simulation and append the summary row to a CSV file.
 
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        OHLCV + indicator DataFrame produced by
-        :func:`~backtest_grid_scale.indicators.calculate_indicators`.
-    params : StrategyParams
-        Strategy parameters for this grid point.
-    output_path : str
-        Directory path where the output CSV is written.
-    filename : str
-        Base filename (without directory) for the output CSV.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Trade-level results DataFrame as returned by :func:`add_trade_stats`.
-    """
 
     results  = simulate_trades(df, params.sl_pct_l, params.sl_pct_s)
     results  = add_trade_stats(results)
     summary  = generate_performance_report(results, params)
 
     out = output_path + 'pandas_' + filename
-    summary.to_csv(out, mode='a', index=False,
+    summary.to_csv(out, mode='a', index=False, 
                    header=not os.path.exists(out))
 
     return results
 
 
 def generate_performance_report(df_Y: pd.DataFrame,
-                                 params: StrategyParams) -> pd.DataFrame:
-    """Build a one-row performance summary from a trade DataFrame.
-
-    The summary contains the strategy parameters followed by per-period
-    (monthly, quarterly, yearly) PnL columns and overall totals.  Column
-    names follow the pattern ``YYYY``, ``YYYYQN``, and ``YYYYMN``.
-
-    Parameters
-    ----------
-    df_Y : pandas.DataFrame
-        Trade-level results DataFrame produced by :func:`add_trade_stats`.
-    params : StrategyParams
-        Strategy parameters written into the first columns of the summary row.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Single-row DataFrame suitable for appending to a results CSV.
-    """
+                                params: StrategyParams)-> pd.DataFrame:
     cfg = load_config()
-    months   = pd.date_range(start=cfg['backtest_start'],
+    months   = pd.date_range(start=cfg['backtest_start'], 
                           end=cfg['backtest_end'], freq='MS')
-    quarters = pd.date_range(start=cfg['backtest_start'],
+    quarters = pd.date_range(start=cfg['backtest_start'], 
                             end=cfg['backtest_end'], freq='QS')
-    years    = pd.date_range(start=cfg['backtest_start'],
+    years    = pd.date_range(start=cfg['backtest_start'], 
                             end=cfg['backtest_end'], freq='YS')
     data = asdict(params)
 
@@ -103,6 +55,7 @@ def generate_performance_report(df_Y: pd.DataFrame,
         subset = df_Y.loc[start:end]
         data[m_name] = subset.pnl.sum()
 
+
     # TOTALS
     total_range = df_Y.loc[cfg['backtest_start']:cfg['backtest_end']]
     data['Total'] = total_range.pnl.sum()
@@ -112,35 +65,9 @@ def generate_performance_report(df_Y: pd.DataFrame,
 
     return new_df
 
-
 # ─── Trade Simulation ─────────────────────────────────────────────────────────
 
-def simulate_trades(df: pd.DataFrame, SL_PCT_L: float, SL_PCT_S: float) -> pd.DataFrame:
-    """Simulate bar-by-bar trade execution using Pandas row access.
-
-    Iterates over the ``position`` column to detect entry signals, then
-    scans forward bar by bar until a stop-loss or an opposing signal closes
-    the trade.  This is the **reference implementation** — correct but slow.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        OHLCV + indicator DataFrame with a ``position`` column
-        (``1`` long, ``-1`` short, ``0`` flat).
-    SL_PCT_L : float
-        Stop-loss distance as a percentage of entry price for long trades.
-    SL_PCT_S : float
-        Stop-loss distance as a percentage of entry price for short trades.
-
-    Returns
-    -------
-    pandas.DataFrame
-        One row per closed trade with columns:
-        ``CloseTrade``, ``position``, ``open``, ``close``, ``pnl``,
-        ``stop_loss``, ``high``, ``low``, ``exit_reason``.
-        The index is the bar timestamp of the trade entry (``OpenTrade``).
-        Returns an empty DataFrame when no trades are found.
-    """
+def simulate_trades(df,SL_PCT_L,SL_PCT_S):
     records = []
     i = 1
     n = len(df)
@@ -215,28 +142,7 @@ def simulate_trades(df: pd.DataFrame, SL_PCT_L: float, SL_PCT_S: float) -> pd.Da
     results.drop(columns=['OpenTrade'], inplace=True)
     return results
 
-
-def add_trade_stats(result: pd.DataFrame) -> pd.DataFrame:
-    """Augment a raw trade DataFrame with derived performance metrics.
-
-    Adds the following columns in-place:
-
-    * ``DrawDown`` — adverse excursion from entry price.
-    * ``Runup``    — favourable excursion from entry price.
-    * ``cumulative_pnl`` — running total PnL across all trades.
-    * ``yearly_pnl_cumsum`` — running total PnL reset each calendar year.
-    * ``position_label`` — human-readable label (``"L"`` / ``"S"`` / ``"X"``).
-
-    Parameters
-    ----------
-    result : pandas.DataFrame
-        Trade-level results DataFrame produced by :func:`simulate_trades`.
-
-    Returns
-    -------
-    pandas.DataFrame
-        The same *result* DataFrame with the new columns appended.
-    """
+def add_trade_stats(result):
     # TIME PERIOD LABELS FOR GROUPING
     result.index = pd.to_datetime(result.index)
     YEAR = result.index.strftime('%Y').astype(int)
@@ -255,5 +161,5 @@ def add_trade_stats(result: pd.DataFrame) -> pd.DataFrame:
     result['cumulative_pnl'] = result['pnl'].cumsum()
     result['yearly_pnl_cumsum'] = result.groupby(YEAR)['pnl'].cumsum()
     result['position_label'] = result['position'].map({1: 'L', -1: 'S', 0: 'X'})
-
+    
     return result
